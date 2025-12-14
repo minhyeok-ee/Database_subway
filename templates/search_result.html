@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h1>경로 검색 결과</h1>
+    <a href="/">홈으로</a> | <a href="/search/">다시 검색</a> <br /><br />
+
+    <p>출발: <b>{{ start_name }}</b> / 도착: <b>{{ end_name }}</b></p>
+
+    <ol>
+      {% for r in routes %}
+      <li>
+        <p>정차역 수: {{ r.length }}개</p>
+
+        <p>
+          {% for s in r.stations %} {% if s.transfer %}
+          <span style="color: red; font-weight: bold">{{ s.name }}</span>
+          <span style="font-size: 12px; color: gray">
+            (환승: {{ s.transfer }})</span
+          >
+          {% else %} {{ s.name }} {% endif %} {% if not loop.last %} → {% endif
+          %} {% endfor %}
+        </p>
+
+        <form method="post" action="/save_route/">
+          <input type="hidden" name="start_name" value="{{ start_name }}" />
+          <input type="hidden" name="end_name" value="{{ end_name }}" />
+          <input type="hidden" name="path_str" value="{{ r.path_str }}" />
+
+          이름(선택): <input type="text" name="route_name" />
+          <button type="submit">이 경로 저장</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ol>
+  </body>
+</html>

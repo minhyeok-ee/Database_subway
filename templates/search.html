@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h1>길찾기</h1>
+    <a href="/">홈으로</a>
+    <br /><br />
+
+    {% if error %}
+    <p style="color: red">{{ error }}</p>
+    {% endif %}
+
+    <form method="post">
+      출발역: <input type="text" name="start_name" /><br /><br />
+      도착역: <input type="text" name="end_name" /><br /><br />
+      <button type="submit">검색</button>
+    </form>
+  </body>
+</html>
