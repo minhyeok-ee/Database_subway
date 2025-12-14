@@ -6,9 +6,7 @@ app = Flask(__name__)
 DB_PATH = "app.db"
 
 
-# -----------------------------
 # DB 초기화 (테이블 없으면 생성)
-# -----------------------------
 def init_db():
     db = sqlite3.connect(DB_PATH)
     db.execute("PRAGMA foreign_keys = ON")
@@ -38,7 +36,6 @@ def init_db():
         );
     """)
 
-    # "나만의 저장 경로"
     cur.execute("""
         create table if not exists SavedRoute(
             id integer primary key,
@@ -53,9 +50,7 @@ def init_db():
     db.close()
 
 
-# -----------------------------
-# 유틸: 역 이름 -> Station_id
-# -----------------------------
+# 역 이름 -> Station_id
 def get_station_id(station_name):
     db = sqlite3.connect(DB_PATH)
     db.row_factory = sqlite3.Row
@@ -70,9 +65,7 @@ def get_station_id(station_name):
     return row["Station_id"]
 
 
-# -----------------------------
-# 유틸: Station_id -> 이름 dict
-# -----------------------------
+# Station_id -> 이름 dict
 def get_id2name_map():
     db = sqlite3.connect(DB_PATH)
     db.row_factory = sqlite3.Row
@@ -85,9 +78,7 @@ def get_id2name_map():
     return {r["Station_id"]: r["Station_name"] for r in rows}
 
 
-# -----------------------------
 # Route 테이블로 그래프(역-역 연결) 만들기
-# -----------------------------
 def build_graph():
     db = sqlite3.connect(DB_PATH)
     db.row_factory = sqlite3.Row
@@ -101,8 +92,8 @@ def build_graph():
     rows = cur.fetchall()
     db.close()
 
-    adj = {}          # {station_id: set(neighbor_station_id)}
-    last_by_line = {} # {line_id: prev_station_id}
+    adj = {} 
+    last_by_line = {} 
 
     for r in rows:
         lid = r["Line_id"]
@@ -122,10 +113,8 @@ def build_graph():
     return adj
 
 
-# -----------------------------
-# 두 역을 직접 연결하는 "가능한 노선명" 리스트
+# 두 역을 직접 연결하는 가능한 노선명 리스트
 # (A역과 B역이 같은 Line에 속하면 그 Line.name 반환)
-# -----------------------------
 def get_lines_between(station_a_id, station_b_id):
     db = sqlite3.connect(DB_PATH)
     db.row_factory = sqlite3.Row
@@ -145,9 +134,7 @@ def get_lines_between(station_a_id, station_b_id):
     return lines
 
 
-# -----------------------------
 # BFS로 "정차역 수(간선 수)" 최단 경로들 중 최대 k개
-# -----------------------------
 def find_k_shortest_paths(start_id, end_id, k=5):
     adj = build_graph()
     if start_id not in adj or end_id not in adj:
@@ -186,11 +173,9 @@ def find_k_shortest_paths(start_id, end_id, k=5):
     return paths
 
 
-# -----------------------------
 # 경로(Station_id 리스트)에 대해
 # "환승역 + 노선 변경 정보"를 만들기
-# - 환승역이면 현재 역에 transfer="A -> B" 붙임
-# -----------------------------
+# 환승역이면 현재 역에 transfer="A -> B" 붙임
 def annotate_transfers(path_ids, id2name):
     detailed = []
     prev_line = None  # 직전 구간에서 선택된 노선명
@@ -226,9 +211,7 @@ def annotate_transfers(path_ids, id2name):
     return detailed
 
 
-# =======================
 # 라우트
-# =======================
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -266,7 +249,6 @@ def delete_route(route_id):
     db.commit()
     db.close()
 
-    # redirect 없이 바로 목록 렌더
     return saved()
 
 
@@ -279,28 +261,28 @@ def search():
     end_name = request.form.get("end_name", "").strip()
 
     if start_name == "" or end_name == "":
-        return render_template("search.html", error="출발역/도착역을 모두 입력해줘.")
+        return render_template("search.html", error="출발역/도착역을 모두 입력해주세요.")
 
     start_id = get_station_id(start_name)
     if start_id is None:
-        return render_template("search.html", error=f"출발역 '{start_name}' 을(를) 찾을 수 없어.")
+        return render_template("search.html", error=f"출발역 '{start_name}' 을(를) 찾을 수 없습니다.")
 
     end_id = get_station_id(end_name)
     if end_id is None:
-        return render_template("search.html", error=f"도착역 '{end_name}' 을(를) 찾을 수 없어.")
+        return render_template("search.html", error=f"도착역 '{end_name}' 을(를) 찾을 수 없습니다.")
 
     id2name = get_id2name_map()
     paths_id = find_k_shortest_paths(start_id, end_id, k=5)
 
     if not paths_id:
-        return render_template("search.html", error="해당 역 사이 경로를 찾을 수 없어. (Route 연결 확인 필요)")
+        return render_template("search.html", error="해당 역 사이 경로를 찾을 수 없습니다. (Route 연결 확인 필요)")
 
     routes = []
     for p in paths_id:
         stations_detailed = annotate_transfers(p, id2name)
         routes.append({
             "length": len(p),
-            "stations": stations_detailed,                 # [{name, transfer}, ...]
+            "stations": stations_detailed,  
             "path_str": ",".join([id2name[sid] for sid in p])
         })
 
