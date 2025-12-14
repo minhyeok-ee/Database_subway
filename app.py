@@ -92,8 +92,8 @@ def build_graph():
     rows = cur.fetchall()
     db.close()
 
-    adj = {} 
-    last_by_line = {} 
+    adj = {}
+    last_by_line = {}
 
     for r in rows:
         lid = r["Line_id"]
@@ -173,27 +173,19 @@ def find_k_shortest_paths(start_id, end_id, k=5):
     return paths
 
 
-# 경로(Station_id 리스트)에 대해
-# "환승역 + 노선 변경 정보"를 만들기
-# 환승역이면 현재 역에 transfer="A -> B" 붙임
 def annotate_transfers(path_ids, id2name):
     detailed = []
     prev_line = None  # 직전 구간에서 선택된 노선명
 
-    for i, sid in enumerate(path_ids):
-        station_name = id2name[sid]
-        transfer_text = None
+    # 첫 역 먼저 추가
+    detailed.append({"name": id2name[path_ids[0]], "transfer": None})
 
-        if i == 0:
-            # 첫 역
-            detailed.append({"name": station_name, "transfer": None})
-            continue
-
+    for i in range(1, len(path_ids)):
         prev_sid = path_ids[i - 1]
+        sid = path_ids[i]
+
         candidate_lines = get_lines_between(prev_sid, sid)
 
-        # 후보 노선 중에서 "이전 노선"을 유지할 수 있으면 유지 (환승 최소처럼 보이게)
-        chosen_line = None
         if prev_line is not None and prev_line in candidate_lines:
             chosen_line = prev_line
         else:
@@ -201,12 +193,13 @@ def annotate_transfers(path_ids, id2name):
 
         # 노선이 바뀌면 환승
         if prev_line is not None and chosen_line is not None and chosen_line != prev_line:
-            transfer_text = f"{prev_line} -> {chosen_line}"
+            detailed[-1]["transfer"] = f"{prev_line} -> {chosen_line}"
 
         # 업데이트
         prev_line = chosen_line
 
-        detailed.append({"name": station_name, "transfer": transfer_text})
+        # 현재 역 추가
+        detailed.append({"name": id2name[sid], "transfer": None})
 
     return detailed
 
@@ -282,7 +275,7 @@ def search():
         stations_detailed = annotate_transfers(p, id2name)
         routes.append({
             "length": len(p),
-            "stations": stations_detailed,  
+            "stations": stations_detailed,
             "path_str": ",".join([id2name[sid] for sid in p])
         })
 
